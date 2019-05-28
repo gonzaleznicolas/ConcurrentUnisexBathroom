@@ -15,7 +15,7 @@ public class Mujer extends Thread{
 	public void run(){
 		while (true){
 			try {
-				Thread.sleep(5000);
+				Thread.sleep(1000);
 				aseo.llegaMujer(id);
 				Thread.sleep(r.nextInt(500));
 				aseo.saleMujer(id);
