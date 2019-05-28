@@ -3,10 +3,11 @@ package aseos;
 import java.util.concurrent.*;
 public class Aseo {
 
-	Semaphore nMenWomenProtector = new Semaphore(1, true);
+	Semaphore intMutex = new Semaphore(1, true);
 	Semaphore deadlockPreventer = new Semaphore(1, true);
-	int nMen = 0;
-	int nWomen = 0;
+	int nMenInBathroom = 0;
+	int nWomenInBathroom = 0;
+	int nPeopleWhoHaveExited = 0;
 	Semaphore blockWomen = new Semaphore(1, true);
 	Semaphore blockMen = new Semaphore(1, true);
 	/**
@@ -17,12 +18,15 @@ public class Aseo {
 	public void llegaHombre(int id) throws InterruptedException{
 		deadlockPreventer.acquire();
 		blockMen.acquire();
-		nMenWomenProtector.acquire();
-		nMen++;
-		if(nMen == 1) // the first man blocks women
+		intMutex.acquire();
+		nMenInBathroom++;
+		if(nMenInBathroom == 1) // the first man blocks women
+		{
 			blockWomen.acquire();
+			nPeopleWhoHaveExited = 0;
+		}
 		System.out.println("Man "+id+" enters.");
-		nMenWomenProtector.release();
+		intMutex.release();
 		blockMen.release();
 		deadlockPreventer.release();
 	}
@@ -34,12 +38,15 @@ public class Aseo {
 	public void llegaMujer(int id) throws InterruptedException{
 		deadlockPreventer.acquire();
 		blockWomen.acquire();
-		nMenWomenProtector.acquire();
-		nWomen++;
-		if(nWomen == 1) // the first woman blocks men
+		intMutex.acquire();
+		nWomenInBathroom++;
+		if(nWomenInBathroom == 1) // the first woman blocks men
+		{
 			blockMen.acquire();
+			nPeopleWhoHaveExited = 0;
+		}
 		System.out.println("Woman "+id+" enters.");
-		nMenWomenProtector.release();
+		intMutex.release();
 		blockWomen.release();
 		deadlockPreventer.release();
 	}
@@ -47,20 +54,22 @@ public class Aseo {
 	 * El hombre id, que estaba en el aseo, sale
 	 */
 	public void saleHombre(int id)throws InterruptedException{
-		nMenWomenProtector.acquire();
-		nMen--;
-		System.out.println("Man "+id+" exits.");
-		if (nMen == 0)
+		intMutex.acquire();
+		nMenInBathroom--;
+		nPeopleWhoHaveExited++;
+		System.out.println("Man "+id+" exits. Currently "+nMenInBathroom+" men in bathroom. "+nPeopleWhoHaveExited+" have exited.");
+		if (nMenInBathroom == 0)
 			blockWomen.release();
-		nMenWomenProtector.release();
+		intMutex.release();
 	}
 	
 	public void saleMujer(int id)throws InterruptedException{
-		nMenWomenProtector.acquire();
-		nWomen--;
-		System.out.println("Woman "+id+" exits.");
-		if (nWomen == 0)
+		intMutex.acquire();
+		nWomenInBathroom--;
+		nPeopleWhoHaveExited++;
+		System.out.println("Woman "+id+" exits. Currently "+nWomenInBathroom+" women in bathroom. "+nPeopleWhoHaveExited+" have exited.");
+		if (nWomenInBathroom == 0)
 			blockMen.release();
-		nMenWomenProtector.release();
+		intMutex.release();
 	}
 }
